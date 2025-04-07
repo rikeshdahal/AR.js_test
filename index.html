@@ -4,22 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RikeshAI AR Avatar</title>
+    <title>RikeshAI AR Avatar with Animations</title>
     
     <!-- A-Frame and AR.js Scripts -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
-    <!-- Import Map for Three.js and TalkingHead -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js/+esm",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-                "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.3/modules/talkinghead.mjs"
-            }
-        }
-    </script>
+    <!-- THREE.js for Animation -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.170.0/examples/js/loaders/FBXLoader.js"></script>
+    
     <style>
         body {
             margin: 0;
@@ -48,45 +42,94 @@
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
         <!-- Hiro Marker -->
         <a-marker preset="hiro">
-            <!-- Avatar Entity -->
-            <a-entity id="avatar-entity" position="0 0 0" scale="0.5 0.5 0.5"></a-entity>
+            <!-- GLTF Model with Custom Component -->
+            <a-gltf-model 
+                id="avatar" 
+                src="https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png" 
+                position="0 0 0" 
+                scale="0.5 0.5 0.5"
+                animation-mixer>
+            </a-gltf-model>
         </a-marker>
         <a-entity camera></a-entity>
     </a-scene>
 
-    <!-- Single Button for Walking Animation -->
+    <!-- Button to Play Walking Animation -->
     <button id="playAnimationBtn">Play Walking Animation</button>
 
-    <script type="module">
-        import { TalkingHead } from "talkinghead";
+    <script>
+        // Register custom A-Frame component for animations and morph targets
+        AFRAME.registerComponent('avatar-animations', {
+            init: function () {
+                const el = this.el;
+                let mixer; // For animations
+                let model; // The loaded GLTF model
+                let walkingAction; // Walking animation action
 
-        let head;
+                // Wait for the model to load
+                el.addEventListener('model-loaded', (e) => {
+                    model = e.detail.model;
+                    mixer = new THREE.AnimationMixer(model);
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const avatarEntity = document.getElementById('avatar-entity');
-            head = new TalkingHead(avatarEntity, {
-                ttsEndpoint: "https://eu-texttospeech.googleapis.com/v1beta1/text:synthesize",
-                ttsApikey: "AIzaSyDKnQEdeUyNeFMQciUkHDuX4AbeplQyuWg",
-                lipsyncModules: ["en"],
-                cameraView: "upper",
-                avatarMood: "neutral"
-            });
+                    // Load the walking animation from FBX
+                    const fbxLoader = new THREE.FBXLoader();
+                    fbxLoader.load(
+                        'https://met4citizen.github.io/TalkingHead/animations/walking.fbx',
+                        (fbx) => {
+                            const walkingAnimation = fbx.animations[0];
+                            if (walkingAnimation) {
+                                walkingAction = mixer.clipAction(walkingAnimation);
+                                walkingAction.setLoop(THREE.LoopRepeat);
+                                console.log('Walking animation loaded');
+                            } else {
+                                console.error('No animations found in FBX');
+                            }
+                        },
+                        undefined,
+                        (error) => console.error('Error loading FBX:', error)
+                    );
 
-            await head.showAvatar({
-                url: 'https://models.readyplayer.me/64bfa15f0e72c63d7c3934a6.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png',
-                body: 'F',
-                ttsLang: "en-GB",
-                ttsVoice: "en-GB-Standard-A",
-                lipsyncLang: 'en'
-            });
+                    // Eye blinking setup
+                    const morphTargets = model.morphTargetDictionary;
+                    const influences = model.morphTargetInfluences;
+                    if (morphTargets && morphTargets['eyesClosed'] !== undefined) {
+                        const eyesClosedIndex = morphTargets['eyesClosed'];
+                        let blinkInterval = setInterval(() => {
+                            // Blink: Close eyes
+                            influences[eyesClosedIndex] = 1;
+                            setTimeout(() => {
+                                // Open eyes
+                                influences[eyesClosedIndex] = 0;
+                            }, 100); // Blink duration
+                        }, 3000); // Blink every 3 seconds
+                    } else {
+                        console.warn('EyesClosed morph target not found');
+                    }
+                });
 
-            // Walking Animation Handler
-            const animationUrl = "https://met4citizen.github.io/TalkingHead/animations/walking.fbx";
-            document.getElementById("playAnimationBtn").addEventListener("click", () => {
-                head.playAnimation(animationUrl, null, 10, 0, 0.01)
-                    .then(() => console.log("Walking animation finished"))
-                    .catch(err => console.error("Animation error:", err));
-            });
+                // Animation update loop
+                this.tick = function (time, delta) {
+                    if (mixer) {
+                        mixer.update(delta / 1000); // Convert delta to seconds
+                    }
+                };
+
+                // Play walking animation when button is clicked
+                document.getElementById('playAnimationBtn').addEventListener('click', () => {
+                    if (walkingAction) {
+                        walkingAction.reset().play();
+                        console.log('Playing walking animation');
+                    } else {
+                        console.warn('Walking animation not loaded yet');
+                    }
+                });
+            }
+        });
+
+        // Add the custom component to the avatar
+        document.addEventListener('DOMContentLoaded', () => {
+            const avatar = document.getElementById('avatar');
+            avatar.setAttribute('avatar-animations', '');
         });
     </script>
 </body>
