@@ -4,14 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RikeshAI with AR.js</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>RikeshAI AR Avatar</title>
     
     <!-- A-Frame and AR.js Scripts -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
+    <!-- Import Map for Three.js and TalkingHead -->
     <script type="importmap">
         {
             "imports": {
@@ -22,163 +21,46 @@
         }
     </script>
     <style>
-        .chat-container {
-            display: none;
-            position: absolute;
-            bottom: 60px;
-            left: 100px;
-            width: 300px;
-            max-height: 400px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 8px;
-            padding: 10px;
+        body {
+            margin: 0;
             overflow: hidden;
-            z-index: 10;
         }
-
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #fff;
-        }
-
-        #chatMessages {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-
-        .chat-message {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 4px;
-        }
-
-        .user-message {
-            background: #4a90e2;
-            text-align: right;
-        }
-
-        .kimi-message {
-            background: #e94e77;
-        }
-
-        .draggable {
-            cursor: grab;
-        }
-
-        .hidden-camera {
-            display: none;
-        }
-
-        .recording-status,
-        .vision-response {
+        #playAnimationBtn {
             position: absolute;
-            top: 10px;
-            left: 50px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 5px;
-            border-radius: 4px;
+            bottom: 20px;
+            left: 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
             z-index: 10;
+        }
+        #playAnimationBtn:hover {
+            background-color: #555;
         }
     </style>
 </head>
 
-<body class="bg-black text-white flex items-center justify-center h-screen p-4">
-    <div class="relative w-full h-full max-w-5xl max-h-5xl bg-yellow-600 rounded-lg shadow-lg overflow-hidden">
-        <button class="absolute top-2 right-2 text-white text-xl z-10" onclick="window.close();">
-            <i class="fas fa-times"></i>
-        </button>
-        
-        <!-- A-Frame AR Scene -->
-        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-            <a-marker preset="hiro">
-                <a-entity id="avatar-entity" position="0 0 0" scale="0.5 0.5 0.5"></a-entity>
-            </a-marker>
-            <a-entity camera></a-entity>
-        </a-scene>
+<body>
+    <!-- A-Frame AR Scene -->
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <!-- Hiro Marker -->
+        <a-marker preset="hiro">
+            <!-- Avatar Entity -->
+            <a-entity id="avatar-entity" position="0 0 0" scale="0.5 0.5 0.5"></a-entity>
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
 
-        <button id="toggleCameraBtn" class="absolute top-2 left-2 bg-gray-700 p-2 text-white rounded-full z-10">
-            <i class="fas fa-video"></i>
-        </button>
-        <div id="videoContainer" class="absolute bottom-4 right-4 w-32 h-32 bg-gray-800 rounded-lg shadow-md draggable z-10">
-            <video id="userVideo" class="w-full h-full object-cover rounded-lg" autoplay muted></video>
-        </div>
-        <div class="absolute bottom-4 left-4 flex space-x-4 z-10">
-            <button id="micToggleBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button id="chatToggleBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-comment"></i>
-            </button>
-            <button id="stopSpeakingBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-hand"></i>
-            </button>
-            <button id="moodBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-smile"></i>
-            </button>
-            <button id="playAnimationBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-play"></i>
-            </button>
-            <button id="stopAnimationBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-stop"></i>
-            </button>
-            <button id="playPoseBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-pause"></i>
-            </button>
-            <button id="stopPoseBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-square"></i>
-            </button>
-            <button id="playGestureBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-hand-paper"></i>
-            </button>
-        </div>
-        <div class="absolute bottom-4 right-4 flex space-x-4 z-10">
-            <button id="soundToggleBtn" class="bg-gray-800 p-3 rounded-full text-white hover:scale-110">
-                <i class="fas fa-volume-up"></i>
-            </button>
-        </div>
-        <div id="chatContainer" class="chat-container draggable">
-            <div class="chat-header">
-                <span>Chat History</span>
-                <button id="clearChatBtn" title="Clear Chat"><i class="fas fa-trash"></i></button>
-            </div>
-            <div id="chatMessages"></div>
-            <div id="userInputContainer" class="flex space-x-2 mt-2 hidden">
-                <input type="text" id="userInput" class="w-full p-2 text-black rounded" placeholder="Type here...">
-                <button id="sendMessageBtn" class="bg-blue-500 p-2 rounded-full text-white hover:scale-110">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-                <button id="captureBtn" class="bg-green-500 p-2 rounded-full text-white hover:scale-110">
-                    <i class="fas fa-camera"></i>
-                </button>
-            </div>
-        </div>
-        <div class="recording-status z-10">
-            <div id="is_recording">Recording: False</div>
-            <div id="recognized_text">Text: </div>
-        </div>
-        <div class="vision-response hidden z-10">
-            <div id="responseText">Vision: Waiting for analysis...</div>
-        </div>
-    </div>
+    <!-- Single Button for Walking Animation -->
+    <button id="playAnimationBtn">Play Walking Animation</button>
 
     <script type="module">
         import { TalkingHead } from "talkinghead";
 
-        let head,
-            micEnabled = false,
-            soundEnabled = true,
-            chatVisible = false,
-            currentStream,
-            currentCamera = 0,
-            chatHistory = [],
-            recognition,
-            isSpeaking = false,
-            lastVisionResult = "";
-        let captureAndAnalyze;
+        let head;
 
         document.addEventListener('DOMContentLoaded', async () => {
             const avatarEntity = document.getElementById('avatar-entity');
@@ -198,326 +80,14 @@
                 lipsyncLang: 'en'
             });
 
-            document.getElementById("micToggleBtn").addEventListener("click", toggleMic);
-            document.getElementById("soundToggleBtn").addEventListener("click", toggleSound);
-            document.getElementById("sendMessageBtn").addEventListener("click", sendMessage);
-            document.getElementById("toggleCameraBtn").addEventListener("click", toggleCamera);
-            document.getElementById("chatToggleBtn").addEventListener("click", toggleChat);
-            document.getElementById("clearChatBtn").addEventListener("click", clearChatHistory);
-            document.getElementById("stopSpeakingBtn").addEventListener("click", stopSpeaking);
-            document.getElementById("moodBtn").addEventListener("click", cycleMood);
-            document.getElementById("playAnimationBtn").addEventListener("click", playAnimationHandler);
-            document.getElementById("stopAnimationBtn").addEventListener("click", stopAnimationHandler);
-            document.getElementById("playPoseBtn").addEventListener("click", playPoseHandler);
-            document.getElementById("stopPoseBtn").addEventListener("click", stopPoseHandler);
-            document.getElementById("playGestureBtn").addEventListener("click", cycleGesture);
-            document.getElementById("captureBtn").addEventListener("click", () => captureAndAnalyze());
-
-            startUserVideo();
-            makeDraggable(document.getElementById("videoContainer"));
-            makeDraggable(document.getElementById("chatContainer"));
-            loadChatHistory();
-            setupSpeechRecognition();
-            initializeVisionSystem();
+            // Walking Animation Handler
+            const animationUrl = "https://met4citizen.github.io/TalkingHead/animations/walking.fbx";
+            document.getElementById("playAnimationBtn").addEventListener("click", () => {
+                head.playAnimation(animationUrl, null, 10, 0, 0.01)
+                    .then(() => console.log("Walking animation finished"))
+                    .catch(err => console.error("Animation error:", err));
+            });
         });
-
-        const moods = ["neutral", "happy", "sad", "angry", "Sleep", "Fear", "disgust", "love"];
-        let currentMoodIndex = 0;
-        function cycleMood() {
-            currentMoodIndex = (currentMoodIndex + 1) % moods.length;
-            head.setMood(moods[currentMoodIndex]);
-            console.log(`Mood changed to ${moods[currentMoodIndex]}`);
-        }
-
-        const animationUrl = "https://met4citizen.github.io/TalkingHead/animations/walking.fbx";
-        const PoseUrl = "https://met4citizen.github.io/TalkingHead/poses/dance.fbx";
-        function playAnimationHandler() {
-            head.playAnimation(animationUrl, null, 10, 0, 0.01)
-                .then(() => console.log("Animation finished"))
-                .catch(err => console.error("Animation error:", err));
-        }
-
-        function stopAnimationHandler() {
-            head.stopAnimation();
-            console.log("Animation stopped");
-        }
-
-        function playPoseHandler() {
-            head.playPose(PoseUrl, null, 5, 0, 0.01)
-                .then(() => console.log("Pose finished"))
-                .catch(err => console.error("Pose error:", err));
-        }
-
-        function stopPoseHandler() {
-            head.stopPose();
-            console.log("Pose stopped");
-        }
-
-        const gestures = ["handup", "index", "ok", "thumbup", "thumbdown", "side", "shrug", "yes"];
-        let currentGestureIndex = 0;
-        function cycleGesture() {
-            const gesture = gestures[currentGestureIndex];
-            const mirror = currentGestureIndex % 2 === 1;
-            try {
-                head.playGesture(gesture, 3, mirror, 1000);
-                console.log(`Playing gesture: ${gesture} ${mirror ? "(right hand)" : "(left hand)"}`);
-            } catch (err) {
-                console.error("Gesture error:", err);
-                console.log(`Error playing gesture: ${err.message}`);
-            }
-            currentGestureIndex = (currentGestureIndex + 1) % gestures.length;
-        }
-
-        function toggleMic() {
-            micEnabled = !micEnabled;
-            document.getElementById("micToggleBtn").innerHTML = micEnabled ? '<i class="fas fa-microphone-slash"></i>' : '<i class="fas fa-microphone"></i>';
-            if (micEnabled && !isSpeaking && recognition) {
-                recognition.start();
-                document.getElementById("is_recording").innerHTML = "Recording: True";
-            } else if (recognition) {
-                recognition.stop();
-                document.getElementById("is_recording").innerHTML = "Recording: False";
-                document.getElementById("recognized_text").innerHTML = "Text: ";
-            }
-        }
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            document.getElementById("soundToggleBtn").innerHTML = soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-            head.setMute(!soundEnabled);
-        }
-
-        function toggleChat() {
-            chatVisible = !chatVisible;
-            const chatContainer = document.getElementById("chatContainer");
-            const userInputContainer = document.getElementById("userInputContainer");
-            chatContainer.style.display = chatVisible ? "block" : "none";
-            userInputContainer.classList.toggle("hidden", !chatVisible);
-        }
-
-        function stopSpeaking() {
-            head.stopSpeaking();
-            isSpeaking = false;
-            if (micEnabled && recognition) {
-                recognition.start();
-                document.getElementById("is_recording").innerHTML = "Recording: True";
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById("userInput").value.trim();
-            if (input) {
-                addToChatHistory("user", input);
-                document.getElementById("userInput").value = "";
-                const aiResponse = await getKimiResponse(input);
-                addToChatHistory("kimi", aiResponse);
-                if (soundEnabled) {
-                    isSpeaking = true;
-                    if (recognition) recognition.stop();
-                    await head.speakText(aiResponse);
-                    isSpeaking = false;
-                    if (micEnabled && recognition) recognition.start();
-                }
-            }
-        }
-
-        async function getKimiResponse(text) {
-            const apiKey = "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";
-            const url = "https://api.groq.com/openai/v1/chat/completions";
-            const headers = { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` };
-            const visionContext = lastVisionResult ? `Based on recent vision analysis: ${lastVisionResult}\n\n` : "";
-            const body = JSON.stringify({
-                model: "llama-3.3-70b-versatile",
-                messages: [
-                    { role: "system", content: `Your name is KIMI AI, a 19-year-old girl from Nepal. You are a helpful AI assistant created by Rikesh Dahal and always respond in a loving and romantic style. ${visionContext}` },
-                    { role: "user", content: text }
-                ],
-                temperature: 1,
-                max_tokens: 1024,
-                top_p: 1,
-                stream: false
-            });
-
-            try {
-                const response = await fetch(url, { method: "POST", headers, body });
-                if (!response.ok) throw new Error("Network response was not ok");
-                const result = await response.json();
-                return result.choices[0].message.content || "Sorry, no response received.";
-            } catch (error) {
-                console.error("Error fetching Groq API:", error);
-                return "Error getting response from AI.";
-            }
-        }
-
-        async function startUserVideo() {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            if (videoDevices.length > 0) {
-                currentCamera = currentCamera % videoDevices.length;
-                navigator.mediaDevices.getUserMedia({ video: { deviceId: videoDevices[currentCamera].deviceId } })
-                    .then(stream => {
-                        if (currentStream) currentStream.getTracks().forEach(track => track.stop());
-                        currentStream = stream;
-                        document.getElementById("userVideo").srcObject = stream;
-                    })
-                    .catch(error => console.error("Error accessing webcam:", error));
-            }
-        }
-
-        function toggleCamera() {
-            document.getElementById("videoContainer").classList.toggle("hidden-camera");
-        }
-
-        function makeDraggable(element) {
-            let offsetX, offsetY, isDragging = false;
-            element.style.position = "absolute";
-            element.addEventListener("mousedown", (e) => {
-                isDragging = true;
-                offsetX = e.clientX - element.offsetLeft;
-                offsetY = e.clientY - element.offsetTop;
-                element.style.cursor = "grabbing";
-            });
-            document.addEventListener("mousemove", (e) => {
-                if (isDragging) {
-                    let newX = e.clientX - offsetX;
-                    let newY = e.clientY - offsetY;
-                    newX = Math.max(0, Math.min(window.innerWidth - element.offsetWidth, newX));
-                    newY = Math.max(0, Math.min(window.innerHeight - element.offsetHeight, newY));
-                    element.style.left = `${newX}px`;
-                    element.style.top = `${newY}px`;
-                }
-            });
-            document.addEventListener("mouseup", () => {
-                isDragging = false;
-                element.style.cursor = "grab";
-            });
-        }
-
-        function addToChatHistory(sender, message) {
-            chatHistory.push({ sender, message });
-            saveChatHistory();
-            updateChatDisplay();
-        }
-
-        function updateChatDisplay() {
-            const chatMessages = document.getElementById("chatMessages");
-            chatMessages.innerHTML = "";
-            chatHistory.forEach(({ sender, message }) => {
-                const div = document.createElement("div");
-                div.classList.add("chat-message", sender === "user" ? "user-message" : "kimi-message");
-                div.textContent = message;
-                chatMessages.appendChild(div);
-            });
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function saveChatHistory() {
-            document.cookie = `chatHistory=${JSON.stringify(chatHistory)}; path=/; max-age=86400`;
-        }
-
-        function loadChatHistory() {
-            const cookies = document.cookie.split(";").map(cookie => cookie.trim());
-            const chatCookie = cookies.find(cookie => cookie.startsWith("chatHistory="));
-            if (chatCookie) {
-                chatHistory = JSON.parse(chatCookie.split("=")[1]);
-                updateChatDisplay();
-            }
-        }
-
-        function clearChatHistory() {
-            chatHistory = [];
-            saveChatHistory();
-            updateChatDisplay();
-        }
-
-        function setupSpeechRecognition() {
-            if (!('webkitSpeechRecognition' in window)) {
-                console.warn("Speech Recognition API not supported.");
-                return;
-            }
-            recognition = new webkitSpeechRecognition();
-            recognition.interimResults = true;
-            recognition.lang = 'en-US';
-            recognition.onresult = async (event) => {
-                const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
-                document.getElementById("recognized_text").innerHTML = `Text: ${transcript}`;
-                if (event.results[0].isFinal && micEnabled && !chatVisible && !isSpeaking) {
-                    addToChatHistory("user", transcript);
-                    const aiResponse = await getKimiResponse(transcript);
-                    addToChatHistory("kimi", aiResponse);
-                    if (soundEnabled) {
-                        isSpeaking = true;
-                        recognition.stop();
-                        await head.speakText(aiResponse);
-                        isSpeaking = false;
-                        if (micEnabled) recognition.start();
-                    }
-                    document.getElementById("recognized_text").innerHTML = "Text: ";
-                } else if (chatVisible) {
-                    document.getElementById("userInput").value = transcript;
-                }
-            };
-            recognition.onend = () => {
-                if (micEnabled && !isSpeaking) recognition.start();
-            };
-            recognition.onstart = () => {
-                if (isSpeaking) recognition.stop();
-            };
-        }
-
-        function initializeVisionSystem() {
-            const video = document.getElementById('userVideo');
-            const canvas = document.createElement('canvas');
-            canvas.style.display = 'none';
-            document.body.appendChild(canvas);
-            const responseText = document.getElementById('responseText');
-            const context = canvas.getContext('2d');
-            const apiKey = 'AIzaSyAY4c_mp20hKDh1SAwDhsad4plD9AxRZVM';
-            const apiEndpoint = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
-
-            captureAndAnalyze = async () => {
-                const prompt = document.getElementById('userInput').value || "What do you see?";
-                document.getElementById("captureBtn").disabled = true;
-                responseText.textContent = 'Vision: Analyzing...';
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0);
-                const imageBase64 = canvas.toDataURL('image/jpeg').split(',')[1];
-
-                try {
-                    const response = await fetch(`${apiEndpoint}?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [
-                                    { text: prompt },
-                                    { inline_data: { mime_type: 'image/jpeg', data: imageBase64 } }
-                                ]
-                            }]
-                        })
-                    });
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    const data = await response.json();
-                    lastVisionResult = data.candidates[0].content.parts[0].text;
-                    responseText.textContent = `Vision: ${lastVisionResult}`;
-                    addToChatHistory("user", prompt);
-                    const aiResponse = await getKimiResponse(`I just analyzed an image: ${lastVisionResult}. How would you respond to "${prompt}"?`);
-                    addToChatHistory("kimi", aiResponse);
-                    if (soundEnabled) {
-                        isSpeaking = true;
-                        if (recognition) recognition.stop();
-                        await head.speakText(aiResponse);
-                        isSpeaking = false;
-                        if (micEnabled && recognition) recognition.start();
-                    }
-                } catch (error) {
-                    console.error('Gemini API error:', error);
-                    responseText.textContent = `Vision: Error: ${error.message}`;
-                }
-                document.getElementById("captureBtn").disabled = false;
-            };
-        }
     </script>
 </body>
 
